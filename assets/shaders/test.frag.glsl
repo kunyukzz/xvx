@@ -2,28 +2,36 @@
 #version 330 core
 out vec4 frag_color;
 
-in vec3 v_normal;
+in vec3 normal_pos;
+in vec3 frag_pos;
 //in vec2 v_texcoord;
 
-/*
-uniform vec4 u_base_color;
-uniform float u_metallic;
-uniform float u_roughness;
-uniform sampler2D u_texture;
-
-uniform vec3 u_light_dir;
-uniform vec3 u_light_color;
-uniform vec3 u_ambient;
-*/
+uniform vec3 light_pos;
+uniform vec3 light_color;
+uniform vec3 view_pos;
+uniform vec3 object_color;
 
 void main() {
-	/*
-	vec4 albedo = texture(u_texture, v_texcoord);
-    float diff = max(dot(v_normal, -u_light_dir), 0.0);
-    vec3 lighting = u_ambient + (u_light_color * diff);
-    vec3 final_color = albedo.rgb * u_base_color.rgb * lighting;
-    frag_color = vec4(final_color, albedo.a);
-	*/
+	vec3 light_dir = normalize(-light_pos);
 
-	frag_color = vec4(0.5, 0.5, 0.5, 1.0);
+	//ambient
+	float ambient_strength = 0.3;
+	vec3 ambient = ambient_strength * light_color;
+
+	//diffuse
+	vec3 norm = normalize(normal_pos);
+	float diff = max(dot(norm, light_dir), 0.0);
+	vec3 diffuse = diff * light_color;
+
+	//specular
+	float specular_strength = 0.3;
+	vec3 view_dir = normalize(view_pos - frag_pos);
+	vec3 reflect_dir = reflect(-light_dir, norm);
+	float spec = pow(max(dot(view_dir, reflect_dir), 0.0), 32);
+	vec3 specular = specular_strength * spec * light_color;
+
+	//result
+	vec3 result = (ambient + diffuse + specular) * object_color;
+	frag_color = vec4(result, 1.0);
+	//frag_color = vec4(0.5, 0.5, 0.5, 1.0);
 }

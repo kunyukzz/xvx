@@ -1,5 +1,6 @@
 #include "app.h"
 #include "memory.h"
+#include "engine/math/maths.h"
 
 #include "engine/system/scene.h"
 
@@ -21,6 +22,7 @@ b8 application_init(application_t *app)
     app->cs = camera_sys_init(&app->arena);
     app->rs = render_sys_init(&app->arena);
     app->sh = shader_sys_init(&app->arena, 8);
+    app->ls = light_sys_init(&app->arena, 2);
     app->ms = mesh_sys_init(&app->arena, 8);
     app->ts = texture_sys_init(&app->arena, 8);
     app->mts = material_sys_init(&app->arena, 8);
@@ -35,6 +37,7 @@ b8 application_init(application_t *app)
     LOG_DEBUG("Camera:     %p", app->cs);
     LOG_DEBUG("Render:     %p", app->rs);
     LOG_DEBUG("Shader:     %p", app->sh);
+    LOG_DEBUG("Light:      %p", app->ls);
     LOG_DEBUG("Mesh:       %p", app->ms);
     LOG_DEBUG("Texture:    %p", app->ts);
     LOG_DEBUG("Material:   %p", app->mts);
@@ -101,9 +104,31 @@ b8 application_run(application_t *app)
 
         render_sys_begin(app->rs, WORLD_PASS);
 
+        static f32 orbit = 0.0f;
+        orbit += (f32)delta * 0.5f;
+
+        light_t *def = light_get(app->ls->default_light);
+
+        if (def)
+        {
+            f32 radius = 5.0f;
+            def->position.x = m_sin(orbit) * radius;
+            def->position.y = 2.0f;
+            def->position.z = m_cos(orbit) * radius;
+        }
+
+        vec3 light_pos = def->position;
+        vec3 view_pos = app->cs->world.position;
+        vec3 obj_color = (vec3){{0.0f, 1.0f, 0.0f}};
+        vec3 light_color = (vec3){{0.7f, 0.7f, 0.7f}};
+
         // bind shader
         shader_bind(0);
-        shader_set_mat4(0, mat4_identity());
+        shader_set_model(0, mat4_identity());
+        shader_set_lightpos(0, light_pos);
+        shader_set_lightcolor(0, light_color);
+        shader_set_viewpos(0, view_pos);
+        shader_set_object_color(0, obj_color);
 
         // TODO: for now, scene only doing temporary thing to collect entity
         // change this to proper scene system
@@ -137,6 +162,7 @@ b8 application_run(application_t *app)
     texture_sys_kill(app->ts);
     mesh_sys_kill(app->ms);
 
+    light_sys_kill(app->ls);
     shader_sys_kill(app->sh);
     render_sys_kill(app->rs);
     camera_sys_kill(app->cs);

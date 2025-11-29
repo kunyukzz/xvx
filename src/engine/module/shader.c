@@ -82,6 +82,8 @@ void shader_sys_kill(shader_system_t *sh)
 
     shader_destroy(sh->default_shader);
 
+    freelist_destroy(sh->fl);
+
     u64 total_size = sizeof(shader_t) * sh->capacity +
                      sizeof(u16) * sh->capacity + sizeof(b8) * sh->capacity;
     FREE(sh->shaders, total_size, MEM_SHADER);
@@ -181,8 +183,6 @@ shader_t *shader_get(shader_handle_t handle)
         return NULL;
     }
 
-    if (index >= g_sh->capacity) return NULL;
-
     if (!g_sh->used[index]) return NULL;
 
     if (g_sh->gen[index] != generation) return NULL;
@@ -196,21 +196,71 @@ shader_t *shader_get(shader_handle_t handle)
     return shader;
 }
 
-void shader_set_mat4(shader_handle_t handle, mat4 m)
+void shader_set_model(shader_handle_t handle, mat4 m)
 {
     shader_t *s = shader_get(handle);
     if (!s) return;
 
     if (s->model == -1)
     {
-        LOG_DEBUG("Shader %u has no model uniform location", handle);
+        LOG_DEBUG("Shader %u has no model uniform", handle);
         return;
     }
     glUniformMatrix4fv(s->model, 1, GL_FALSE, m.data);
 }
 
-void shader_set_vec3(shader_handle_t handle, i32 loc, vec3 v)
+void shader_set_lightpos(shader_handle_t handle, vec3 v)
 {
-    (void)handle;
-    glUniform3fv(loc, 1, &v.x);
+    shader_t *s = shader_get(handle);
+    if (!s) return;
+
+    if (s->light_pos == -1)
+    {
+        LOG_DEBUG("Shader %u has no light_pos uniform", handle);
+        return;
+    }
+
+    glUniform3fv(s->light_pos, 1, &v.x);
+}
+
+void shader_set_lightcolor(shader_handle_t handle, vec3 v)
+{
+    shader_t *s = shader_get(handle);
+    if (!s) return;
+
+    if (s->light_color == -1)
+    {
+        LOG_DEBUG("Shader %u has no light_color uniform", handle);
+        return;
+    }
+
+    glUniform3fv(s->light_color, 1, &v.x);
+}
+
+void shader_set_object_color(shader_handle_t handle, vec3 v)
+{
+    shader_t *s = shader_get(handle);
+    if (!s) return;
+
+    if (s->object_color == -1)
+    {
+        LOG_DEBUG("Shader %u has no light_color uniform", handle);
+        return;
+    }
+
+    glUniform3fv(s->object_color, 1, &v.x);
+}
+
+void shader_set_viewpos(shader_handle_t handle, vec3 v)
+{
+    shader_t *s = shader_get(handle);
+    if (!s) return;
+
+    if (s->view_pos == -1)
+    {
+        LOG_DEBUG("Shader %u has no view_pos uniform", handle);
+        return;
+    }
+
+    glUniform3fv(s->view_pos, 1, &v.x);
 }

@@ -29,9 +29,9 @@ static u64 g_mem_capacity = 0;
 static u64 g_mem_reserved = 0;
 
 static const char *tag_str[MEM_MAX_TAG] = {
-    "MEM_UNKNOWN", "MEM_GAME",  "MEM_ARENA",    "MEM_RENDER",
-    "MEM_AUDIO",   "MEM_ARRAY", "MEM_DYNARRAY", "MEM_RESOURCE",
-    "MEM_TEXTURE", "MEM_MESH",  "MEM_MATERIAL", "MEM_SHADER"};
+    "MEM_UNKNOWN",  "MEM_GAME",     "MEM_ARENA",    "MEM_RENDER",  "MEM_AUDIO",
+    "MEM_ARRAY",    "MEM_DYNARRAY", "MEM_RESOURCE", "MEM_TEXTURE", "MEM_MESH",
+    "MEM_MATERIAL", "MEM_SHADER",   "MEM_LIGHT"};
 
 static void memory_report_leaks(void)
 {

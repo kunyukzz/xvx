@@ -99,15 +99,21 @@ void shader_unbind(void);
 shader_t *shader_get(shader_handle_t handle);
 
 /**
- * @brief Set a mat4 uniform in the shader
+ * @brief Helper set a mat4 uniform in the shader
  * @param handle Handle to the shader
  * @param m Matrix to set
  *
  * Updates a mat4 uniform in the currently bound shader.
  * The uniform name is probably hardcoded because I'm lazy.
  */
-void shader_set_mat4(shader_handle_t handle, mat4 m);
+void shader_set_model(shader_handle_t handle, mat4 m);
 
-void shader_set_vec3(shader_handle_t handle, i32 loc, vec3 v);
+void shader_set_lightpos(shader_handle_t handle, vec3 v);
+
+void shader_set_lightcolor(shader_handle_t handle, vec3 v);
+
+void shader_set_object_color(shader_handle_t handle, vec3 v);
+
+void shader_set_viewpos(shader_handle_t handle, vec3 v);
 
 #endif // SHADER_H

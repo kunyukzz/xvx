@@ -20,6 +20,7 @@
 #include "engine/rendering/camera.h"
 #include "engine/rendering/renderer.h"
 #include "engine/module/shader.h"
+#include "engine/module/lights.h"
 #include "engine/module/mesh.h"
 #include "engine/module/texture.h"
 #include "engine/module/material.h"
@@ -46,6 +47,7 @@ typedef struct {
     camera_system_t *cs;
     render_system_t *rs;
     shader_system_t *sh;
+    lighting_system_t *ls;
 
     mesh_system_t *ms;
     texture_system_t *ts;

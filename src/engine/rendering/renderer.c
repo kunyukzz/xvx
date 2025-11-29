@@ -109,7 +109,7 @@ render_system_t *render_sys_init(arena_alloc_t *arena)
     rs->curr_mesh = INVALID_32;
 
     rs->current_fbo = 0;
-    rs->clear_color = (vec4){{1.0f, 0.0f, 0.0f, 1.0f}};
+    rs->clear_color = (vec4){{0.0f, 0.0f, 0.0f, 1.0f}};
 
     // set world renderpass
     rs->main_pass = (render_pass_t){.fbo = rs->main_fbo,

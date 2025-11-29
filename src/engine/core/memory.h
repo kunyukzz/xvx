@@ -32,6 +32,7 @@ typedef enum {
     MEM_MESH,
     MEM_MATERIAL,
     MEM_SHADER,
+    MEM_LIGHT,
     MEM_MAX_TAG
 } memtag_t;
 

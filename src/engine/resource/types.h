@@ -18,6 +18,7 @@ typedef u32 mesh_handle_t;
 typedef u32 texture_handle_t;
 typedef u32 material_handle_t;
 typedef u32 shader_handle_t;
+typedef u32 light_handle_t;
 
 /**
  * @struct geometry_t
@@ -117,19 +118,21 @@ typedef struct {
     i32 model;
 
     i32 light_pos;
-    i32 view_pos;
     i32 light_color;
     i32 object_color;
+    i32 view_pos;
 } shader_t;
 
 typedef enum { LIGHT_DIRECTIONAL = 0, LIGHT_POINT, LIGHT_SPOT } light_type_t;
 
 typedef struct {
     light_type_t type;
-    vec3 position;  // For point/spot lights
-    vec3 direction; // For directional/spot lights
+
+    // default properties
+    vec3 position;
     vec3 color;
     f32 intensity;
+    b8 enable;
 
     // Point/Spot light properties
     f32 radius;
@@ -137,10 +140,6 @@ typedef struct {
     // Spot light properties
     f32 inner_cutoff;
     f32 outer_cutoff;
-
-    // For shadow mapping
-    mat4 light_space_matrix;
-    b8 casts_shadows;
 } light_t;
 
 #endif // RESOURCES_TYPE_H

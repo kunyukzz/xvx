@@ -11,12 +11,14 @@ layout(std140) uniform camera_block{
     mat4 view;
 };
 
-out vec3 v_normal;
+out vec3 normal_pos;
+out vec3 frag_pos;
 //out vec2 v_texcoord;
 
 void main() {
-	v_normal = a_normal;
+	frag_pos = vec3(model * vec4(a_pos, 1.00));
+	normal_pos = mat3(transpose(inverse(model))) * a_normal;
 	//v_texcoord = a_texcoord;
 
-	gl_Position = proj * view * model * vec4(a_pos, 1.0);
+	gl_Position = proj * view * vec4(a_pos, 1.0);
 }
