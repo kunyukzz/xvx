@@ -2,10 +2,10 @@
 #version 330 core
 out vec4 frag_color;
 
-/*
 in vec3 v_normal;
-in vec2 v_texcoord;
+//in vec2 v_texcoord;
 
+/*
 uniform vec4 u_base_color;
 uniform float u_metallic;
 uniform float u_roughness;

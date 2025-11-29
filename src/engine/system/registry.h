@@ -14,6 +14,7 @@
 #include "engine/core/define.h"
 #include "engine/core/arena.h"
 #include "engine/core/container/darray.h"
+#include "engine/core/container/freelist.h"
 #include "entity.h"
 #include "component.h"
 
@@ -23,6 +24,7 @@
  *
  * Uses component masks to track which components each entity has.
  * Each component type has its own dense array for better cache performance.
+ * TODO: this should be opaque, so game cannot see it.
  */
 typedef struct registry_t {
     arena_alloc_t *arena;
@@ -31,6 +33,8 @@ typedef struct registry_t {
     darray_t *component_mask;
     darray_t *transform;
     darray_t *model;
+
+    freelist_t *fl;
 } registry_t;
 
 /**
@@ -141,5 +145,13 @@ model_comp_t *registry_get_model(registry_t *reg, entity_id entity);
  * @return True if entity has model component
  */
 b8 registry_has_model(registry_t *reg, entity_id entity);
+
+/**
+ * @brief Get the global registry system
+ * @return Pointer to registry system
+ *
+ * Global accessor for the registry system.
+ */
+registry_t *get_registry_system(void);
 
 #endif // REGISTRY_H

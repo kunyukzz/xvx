@@ -3,7 +3,9 @@
 
 #include <string.h>
 
-static freelist_t *g_entt_freelist = NULL;
+// static freelist_t *g_entt_freelist = NULL;
+
+static registry_t *g_reg = NULL;
 
 registry_t *registry_sys_init(arena_alloc_t *arena, u32 capacity)
 {
@@ -37,9 +39,10 @@ registry_t *registry_sys_init(arena_alloc_t *arena, u32 capacity)
         da_append(reg->model, &def_mesh_comp);
     }
 
-    g_entt_freelist = freelist_create(arena, capacity);
-    if (!g_entt_freelist) return NULL;
+    reg->fl = freelist_create(arena, capacity);
+    if (!reg->fl) return NULL;
 
+    g_reg = reg;
     LOG_INFO("Registry Init");
     return reg;
 }
@@ -48,7 +51,7 @@ void registry_sys_kill(registry_t *reg)
 {
     if (!reg) return;
 
-    freelist_destroy(g_entt_freelist);
+    freelist_destroy(reg->fl);
 
     da_free(reg->component_mask);
     da_free(reg->transform);
@@ -60,7 +63,7 @@ void registry_sys_kill(registry_t *reg)
 
 entity_id registry_create_entity(registry_t *reg)
 {
-    u32 index = freelist_alloc(g_entt_freelist);
+    u32 index = freelist_alloc(reg->fl);
     if (index == INVALID_32)
     {
         LOG_ERROR("No free entity slots available");
@@ -95,7 +98,7 @@ void registry_destroy_entity(registry_t *reg, entity_id entity)
     memset(da_get(reg->transform, index), 0, sizeof(transform_comp_t));
     memset(da_get(reg->model, index), 0, sizeof(model_comp_t));
 
-    freelist_free(g_entt_freelist, index);
+    freelist_free(reg->fl, index);
 
     LOG_DEBUG("Freed entity index %u", index);
 }
@@ -177,3 +180,4 @@ b8 registry_has_model(registry_t *reg, entity_id entity)
     return mask && (*mask & COMP_MODEL);
 }
 
+registry_t *get_registry_system(void) { return g_reg; }

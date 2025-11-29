@@ -122,4 +122,25 @@ typedef struct {
     i32 object_color;
 } shader_t;
 
+typedef enum { LIGHT_DIRECTIONAL = 0, LIGHT_POINT, LIGHT_SPOT } light_type_t;
+
+typedef struct {
+    light_type_t type;
+    vec3 position;  // For point/spot lights
+    vec3 direction; // For directional/spot lights
+    vec3 color;
+    f32 intensity;
+
+    // Point/Spot light properties
+    f32 radius;
+
+    // Spot light properties
+    f32 inner_cutoff;
+    f32 outer_cutoff;
+
+    // For shadow mapping
+    mat4 light_space_matrix;
+    b8 casts_shadows;
+} light_t;
+
 #endif // RESOURCES_TYPE_H

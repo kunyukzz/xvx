@@ -13,6 +13,8 @@
 #include "engine/core/define.h"
 #include "engine/rendering/camera.h"
 
+#include "engine/system/registry.h"
+
 // TODO: temporary
 #include "engine/resource/types.h"
 #include "engine/system/entity.h"
@@ -27,9 +29,11 @@
 typedef struct {
     f64 delta;
     camera_system_t *cam;
+    registry_t *reg;
 
     // TODO: temporary
     mesh_handle_t cube;
+    material_handle_t test_mat;
     entity_id entt_cube;
 } game_t;
 

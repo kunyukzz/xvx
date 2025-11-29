@@ -27,19 +27,6 @@ b8 application_init(application_t *app)
     app->reg = registry_sys_init(&app->arena, 8);
     app->game = game_init();
 
-    // TODO: Temporary code start
-    app->game->entt_cube = registry_create_entity(app->reg);
-
-    transform_comp_t tr1 = transform_comp_default();
-    registry_add_transform(app->reg, app->game->entt_cube, tr1);
-
-    material_handle_t material_empty = material_create(
-        "empty_material", (vec4){{0.8f, 0.0f, 0.0f, 1.0f}}, 0, 0.0, 0.0);
-
-    registry_add_model(app->reg, app->game->entt_cube,
-                       model_comp_create(app->game->cube, material_empty));
-    //  TODO: Temporary code end
-
 #if DEBUG
     LOG_DEBUG("--- Memory Addresses ---");
     LOG_DEBUG("Filesystem: %p", app->fs);

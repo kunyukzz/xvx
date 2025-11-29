@@ -36,7 +36,9 @@ make
 # Run the testbed
 ./bin/xvx
 
+```
+
 ### Current Status
 
-Working prototype! Actively tested on Linux, with Windows support in progress.
+Working prototype! Actively tested on Linux, with Windows support not tested yet.
 The engine is currently tied directly to the testbed game, but will eventually becom a standalone library.
