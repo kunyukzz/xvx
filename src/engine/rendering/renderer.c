@@ -106,8 +106,6 @@ render_system_t *render_sys_init(arena_alloc_t *arena)
         ALLOC(sizeof(render_texture_t) * RENDER_MAX_TEXTURE, MEM_RENDER);
     rs->rs_shader =
         ALLOC(sizeof(render_shader_t) * RENDER_MAX_SHADER, MEM_RENDER);
-    rs->rs_ui_mesh =
-        ALLOC(sizeof(render_mesh_t) * RENDER_MAX_MESH, MEM_RENDER);
     rs->rs_cmd = ALLOC(sizeof(render_cmd_t) * RENDER_MAX_CMD, MEM_RENDER);
 
     // glad setup
@@ -157,20 +155,15 @@ void render_sys_kill(render_system_t *rs)
 {
     if (!rs) return;
 
-    glDeleteVertexArrays(1, &rs->rs_ui_mesh->vao);
-    glDeleteBuffers(1, &rs->rs_ui_mesh->vbo);
-    glDeleteBuffers(1, &rs->rs_ui_mesh->ebo);
-
     glDeleteVertexArrays(1, &rs->rs_mesh->vao);
     glDeleteBuffers(1, &rs->rs_mesh->vbo);
     glDeleteBuffers(1, &rs->rs_mesh->ebo);
 
     FREE(rs->rs_cmd, sizeof(render_cmd_t) * RENDER_MAX_CMD, MEM_RENDER);
 
-    FREE(rs->rs_ui_mesh, sizeof(render_mesh_t) * RENDER_MAX_MESH, MEM_RENDER);
-    FREE(rs->rs_shader, sizeof(render_shader_t) * RENDER_MAX_SHADER,
-         MEM_RENDER);
     FREE(rs->rs_tex, sizeof(render_texture_t) * RENDER_MAX_TEXTURE,
+         MEM_RENDER);
+    FREE(rs->rs_shader, sizeof(render_shader_t) * RENDER_MAX_SHADER,
          MEM_RENDER);
     FREE(rs->rs_mesh, sizeof(render_mesh_t), MEM_RENDER);
 
@@ -354,6 +347,111 @@ u32 render_upload_shader(shader_handle_t handle, const char *name)
               program);
 
     return program;
+}
+
+void render_destroy_shader(shader_handle_t handle)
+{
+    shader_t *s = shader_get(handle);
+    if (!s) return;
+
+    glDeleteProgram(s->program);
+}
+
+void render_cache_shader_uniform(shader_t *s)
+{
+    u32 prog = s->program;
+
+    s->model = glGetUniformLocation(prog, "model");
+    s->light_pos = glGetUniformLocation(prog, "light_pos");
+    s->view_pos = glGetUniformLocation(prog, "view_pos");
+    s->light_color = glGetUniformLocation(prog, "light_color");
+    s->object_color = glGetUniformLocation(prog, "object_color");
+    s->texture = glGetUniformLocation(prog, "object_texture");
+}
+
+void render_bind_shader(u32 program) { glUseProgram(program); }
+
+void render_set_model(shader_handle_t handle, mat4 m)
+{
+    shader_t *s = shader_get(handle);
+    if (!s) return;
+
+    if (s->model == -1)
+    {
+        LOG_DEBUG("Shader %u has no model uniform", handle);
+        return;
+    }
+    glUniformMatrix4fv(s->model, 1, GL_FALSE, m.data);
+}
+
+void render_set_light_pos(shader_handle_t handle, vec3 v)
+{
+    shader_t *s = shader_get(handle);
+    if (!s) return;
+
+    if (s->light_pos == -1)
+    {
+        LOG_DEBUG("Shader %u has no light_pos uniform", handle);
+        return;
+    }
+
+    glUniform3fv(s->light_pos, 1, &v.x);
+}
+
+void render_set_light_color(shader_handle_t handle, vec3 v)
+{
+    shader_t *s = shader_get(handle);
+    if (!s) return;
+
+    if (s->light_color == -1)
+    {
+        LOG_DEBUG("Shader %u has no light_color uniform", handle);
+        return;
+    }
+
+    glUniform3fv(s->light_color, 1, &v.x);
+}
+
+void render_set_object_color(shader_handle_t handle, vec3 v)
+{
+    shader_t *s = shader_get(handle);
+    if (!s) return;
+
+    if (s->object_color == -1)
+    {
+        LOG_DEBUG("Shader %u has no light_color uniform", handle);
+        return;
+    }
+
+    glUniform3fv(s->object_color, 1, &v.x);
+}
+
+void render_set_view_pos(shader_handle_t handle, vec3 v)
+{
+    shader_t *s = shader_get(handle);
+    if (!s) return;
+
+    if (s->view_pos == -1)
+    {
+        LOG_DEBUG("Shader %u has no view_pos uniform", handle);
+        return;
+    }
+
+    glUniform3fv(s->view_pos, 1, &v.x);
+}
+
+void render_set_sampler(shader_handle_t handle, i32 id)
+{
+    shader_t *s = shader_get(handle);
+    if (!s) return;
+
+    if (s->texture == -1)
+    {
+        LOG_DEBUG("Shader %u has no sampler uniform", handle);
+        return;
+    }
+
+    glUniform1i(s->texture, id);
 }
 
 void render_upload_mesh(mesh_handle_t handle, geometry_t *geo)

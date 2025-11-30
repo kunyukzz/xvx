@@ -39,7 +39,6 @@ typedef struct {
     u32 ui_fbo;
 
     render_mesh_t *rs_mesh;
-    render_mesh_t *rs_ui_mesh;
     render_texture_t *rs_tex;
     render_cmd_t *rs_cmd;
     u32 cmd_count;
@@ -140,6 +139,24 @@ void render_flush(render_system_t *rs);
  * Looks for name.vert and name.frag files in shader directory.
  */
 u32 render_upload_shader(shader_handle_t handle, const char *name);
+
+void render_destroy_shader(shader_handle_t handle);
+
+void render_cache_shader_uniform(shader_t *s);
+
+void render_bind_shader(u32 program);
+
+void render_set_model(shader_handle_t handle, mat4 m);
+
+void render_set_light_pos(shader_handle_t handle, vec3 v);
+
+void render_set_light_color(shader_handle_t handle, vec3 v);
+
+void render_set_object_color(shader_handle_t handle, vec3 v);
+
+void render_set_view_pos(shader_handle_t handle, vec3 v);
+
+void render_set_sampler(shader_handle_t handle, i32 id);
 
 /**
  * @brief Upload mesh geometry to GPU buffers

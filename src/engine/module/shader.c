@@ -2,26 +2,11 @@
 #include "engine/core/memory.h"
 #include "engine/rendering/renderer.h"
 #include "handle_util.h"
-#include "deps/glad/glad.h"
 
 // std
 #include <string.h>
 
 static shader_system_t *g_sh = NULL;
-
-static void shader_cache_uniforms(shader_t *s)
-{
-    u32 prog = s->program;
-
-    s->model = glGetUniformLocation(prog, "model");
-    s->light_pos = glGetUniformLocation(prog, "light_pos");
-    s->view_pos = glGetUniformLocation(prog, "view_pos");
-    s->light_color = glGetUniformLocation(prog, "light_color");
-    s->object_color = glGetUniformLocation(prog, "object_color");
-    s->texture = glGetUniformLocation(prog, "object_texture");
-
-    // LOG_DEBUG("Cached uniforms for '%s'", s->name);
-}
 
 shader_system_t *shader_sys_init(arena_alloc_t *arena, u32 capacity)
 {
@@ -67,11 +52,13 @@ void shader_sys_kill(shader_system_t *sh)
 {
     if (!sh) return;
 
+    shader_destroy(sh->default_shader);
+
     for (u32 i = 0; i < sh->capacity; i++)
     {
         if (sh->used[i] && sh->shaders[i].program)
         {
-            glDeleteProgram(sh->shaders[i].program);
+            render_destroy_shader(sh->shaders[i].program);
         }
         if (sh->shaders[i].uniforms)
         {
@@ -80,8 +67,6 @@ void shader_sys_kill(shader_system_t *sh)
                  MEM_SHADER);
         }
     }
-
-    shader_destroy(sh->default_shader);
 
     freelist_destroy(sh->fl);
 
@@ -118,19 +103,19 @@ shader_handle_t shader_create(const char *name)
     shader_handle_t handle = handle_create((u16)index, gen);
 
     s->program = render_upload_shader(handle, name);
-    shader_cache_uniforms(s);
+    render_cache_shader_uniform(s);
 
     return handle;
 }
 
 void shader_destroy(shader_handle_t handle)
 {
+    render_destroy_shader(handle);
+
     shader_t *s = shader_get(handle);
     if (!s) return;
 
     u16 index = handle_get_index(handle);
-
-    if (s->program) glDeleteProgram(s->program);
 
     if (s->uniforms)
     {
@@ -157,17 +142,10 @@ void shader_bind(shader_handle_t handle)
         s = shader_get(g_sh->default_shader);
     }
 
-    if (s && s->program)
-    {
-        glUseProgram(s->program);
-    }
-    else
-    {
-        glUseProgram(0);
-    }
+    render_bind_shader(s ? s->program : 0);
 }
 
-void shader_unbind(void) { glUseProgram(0); }
+void shader_unbind(void) { render_bind_shader(0); }
 
 shader_t *shader_get(shader_handle_t handle)
 {
@@ -199,83 +177,30 @@ shader_t *shader_get(shader_handle_t handle)
 
 void shader_set_model(shader_handle_t handle, mat4 m)
 {
-    shader_t *s = shader_get(handle);
-    if (!s) return;
-
-    if (s->model == -1)
-    {
-        LOG_DEBUG("Shader %u has no model uniform", handle);
-        return;
-    }
-    glUniformMatrix4fv(s->model, 1, GL_FALSE, m.data);
+    render_set_model(handle, m);
 }
 
 void shader_set_lightpos(shader_handle_t handle, vec3 v)
 {
-    shader_t *s = shader_get(handle);
-    if (!s) return;
-
-    if (s->light_pos == -1)
-    {
-        LOG_DEBUG("Shader %u has no light_pos uniform", handle);
-        return;
-    }
-
-    glUniform3fv(s->light_pos, 1, &v.x);
+    render_set_light_pos(handle, v);
 }
 
 void shader_set_lightcolor(shader_handle_t handle, vec3 v)
 {
-    shader_t *s = shader_get(handle);
-    if (!s) return;
-
-    if (s->light_color == -1)
-    {
-        LOG_DEBUG("Shader %u has no light_color uniform", handle);
-        return;
-    }
-
-    glUniform3fv(s->light_color, 1, &v.x);
+    render_set_light_color(handle, v);
 }
 
 void shader_set_object_color(shader_handle_t handle, vec3 v)
 {
-    shader_t *s = shader_get(handle);
-    if (!s) return;
-
-    if (s->object_color == -1)
-    {
-        LOG_DEBUG("Shader %u has no light_color uniform", handle);
-        return;
-    }
-
-    glUniform3fv(s->object_color, 1, &v.x);
+    render_set_object_color(handle, v);
 }
 
 void shader_set_viewpos(shader_handle_t handle, vec3 v)
 {
-    shader_t *s = shader_get(handle);
-    if (!s) return;
-
-    if (s->view_pos == -1)
-    {
-        LOG_DEBUG("Shader %u has no view_pos uniform", handle);
-        return;
-    }
-
-    glUniform3fv(s->view_pos, 1, &v.x);
+    render_set_view_pos(handle, v);
 }
 
 void shader_set_sampler(shader_handle_t handle, i32 i)
 {
-    shader_t *s = shader_get(handle);
-    if (!s) return;
-
-    if (s->texture == -1)
-    {
-        LOG_DEBUG("Shader %u has no sampler uniform", handle);
-        return;
-    }
-
-    glUniform1i(s->texture, i);
+    render_set_sampler(handle, i);
 }
