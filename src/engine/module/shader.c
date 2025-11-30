@@ -18,8 +18,9 @@ static void shader_cache_uniforms(shader_t *s)
     s->view_pos = glGetUniformLocation(prog, "view_pos");
     s->light_color = glGetUniformLocation(prog, "light_color");
     s->object_color = glGetUniformLocation(prog, "object_color");
+    s->texture = glGetUniformLocation(prog, "object_texture");
 
-    LOG_DEBUG("Cached uniforms for '%s'", s->name);
+    // LOG_DEBUG("Cached uniforms for '%s'", s->name);
 }
 
 shader_system_t *shader_sys_init(arena_alloc_t *arena, u32 capacity)
@@ -263,4 +264,18 @@ void shader_set_viewpos(shader_handle_t handle, vec3 v)
     }
 
     glUniform3fv(s->view_pos, 1, &v.x);
+}
+
+void shader_set_sampler(shader_handle_t handle, i32 i)
+{
+    shader_t *s = shader_get(handle);
+    if (!s) return;
+
+    if (s->texture == -1)
+    {
+        LOG_DEBUG("Shader %u has no sampler uniform", handle);
+        return;
+    }
+
+    glUniform1i(s->texture, i);
 }

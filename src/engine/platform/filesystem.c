@@ -48,7 +48,7 @@ file_system_t *file_system_init(arena_alloc_t *arena)
     fs->arena = arena;
 
     path_t exe_dir = get_executable_dir();
-    LOG_TRACE("exe_dir = %s", exe_dir.buffer);
+    // LOG_TRACE("exe_dir = %s", exe_dir.buffer);
 
     // Assets folder next to executable
     path_t p1 = path_join(exe_dir.buffer, "assets");

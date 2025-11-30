@@ -2,7 +2,8 @@
 #include "engine/math/maths.h"
 #include "engine/rendering/renderer.h"
 
-void scene_system_render(registry_t *reg, render_system_t *rs)
+void scene_system_render(registry_t *reg, render_system_t *rs,
+                         shader_system_t *sh, lighting_system_t *ls)
 {
     for (u32 i = 0; i < reg->capacity; ++i)
     {
@@ -20,11 +21,11 @@ void scene_system_render(registry_t *reg, render_system_t *rs)
         }
 
         // NOTE: use render_draw if want direct call. (disable push & flush)
-        render_draw(rs, m->mesh);
+        // render_draw(rs, m->mesh);
 
-        // render_push(rs, m->mesh);
+        render_push(rs, m->mesh, m->texture);
     }
 
-    // render_flush(rs);
+    render_flush(rs);
 }
 

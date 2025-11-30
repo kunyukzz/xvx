@@ -67,7 +67,7 @@ texture_system_t *texture_sys_init(arena_alloc_t *arena, u32 capacity)
     if (!ts->fl) return NULL;
 
     g_ts = ts;
-    // ts->default_texture = create_checker_texture();
+    ts->default_texture = create_checker_texture();
     // LOG_DEBUG("Created default texture: %u", ts->default_texture);
     LOG_INFO("Texture System Init");
     return ts;
@@ -170,11 +170,6 @@ texture_t *texture_get(texture_handle_t handle)
 
     u16 index = handle_get_index(handle);
     u16 generation = handle_get_generation(handle);
-
-    if (index >= g_ts->capacity)
-    {
-        return NULL;
-    }
 
     if (index >= g_ts->capacity) return NULL;
 

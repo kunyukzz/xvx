@@ -4,6 +4,7 @@
 #include "engine/math/maths.h"
 
 #include "engine/module/mesh.h"
+#include "engine/module/texture.h"
 #include "engine/module/material.h"
 
 game_t *game_init(void)
@@ -14,15 +15,17 @@ game_t *game_init(void)
     game->reg = get_registry_system();
 
     game->cube = mesh_create_cube(1.0, 1.0, 1.0);
+    game->rock = texture_create_from_file("textures/rocks");
+    game->test_mat = material_create("rock", (vec4){{0.8f, 0.0f, 0.0f, 1.0f}},
+                                     game->rock, 0.0f, 0.0f);
+
     game->entt_cube = registry_create_entity(game->reg);
 
     transform_comp_t t1 = transform_comp_default();
     registry_add_transform(game->reg, game->entt_cube, t1);
 
-    game->test_mat = material_create("empty", (vec4){{0.8f, 0.0f, 0.0f, 1.0f}},
-                                     0, 0.0f, 0.0f);
-
-    model_comp_t model = model_comp_create(game->cube, game->test_mat);
+    model_comp_t model =
+        model_comp_create(game->cube, game->rock, game->test_mat);
     registry_add_model(game->reg, game->entt_cube, model);
 
     LOG_INFO("Game Init");

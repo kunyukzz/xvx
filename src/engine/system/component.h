@@ -24,6 +24,8 @@ typedef enum {
     COMP_NONE = 0,
     COMP_TRANSFORM = 1 << 0,
     COMP_MODEL = 1 << 1,
+    COMP_LIGHT = 1 << 2,
+    COMP_MATERIAL = 1 << 3
 } component_type_t;
 
 /**
@@ -52,8 +54,32 @@ typedef struct {
  */
 typedef struct {
     mesh_handle_t mesh;
+    texture_handle_t texture; // TODO: remove this later
     material_handle_t material;
 } model_comp_t;
+
+/**
+ * @struct light_comp_t
+ * @brief Light component for rendering
+ *
+ * Just holds handles to light resources.
+ * The actual data lives elsewhere - this is just a reference.
+ */
+typedef struct {
+    light_handle_t handle;
+    b8 enabled;
+} light_comp_t;
+
+/**
+ * @struct material_comp_t
+ * @brief Material component for rendering
+ *
+ * Just holds handles to material resources.
+ * The actual data lives elsewhere - this is just a reference.
+ */
+typedef struct {
+    material_handle_t handle;
+} material_comp_t;
 
 /**
  * @brief Create a default transform component
@@ -80,10 +106,10 @@ INL transform_comp_t transform_comp_default(void)
  * Just bundles mesh and material together.
  * If either handle is invalid, it'll probably crash. Fun!
  */
-INL model_comp_t model_comp_create(mesh_handle_t mesh,
-                                   material_handle_t material)
+INL model_comp_t model_comp_create(mesh_handle_t mesh, texture_handle_t tex,
+                                   material_handle_t mat)
 {
-    return (model_comp_t){.mesh = mesh, .material = material};
+    return (model_comp_t){.mesh = mesh, .texture = tex, .material = mat};
 }
 
 #endif // COMPONENT_H

@@ -4,15 +4,18 @@ out vec4 frag_color;
 
 in vec3 normal_pos;
 in vec3 frag_pos;
-//in vec2 v_texcoord;
+in vec2 texcoord;
 
 uniform vec3 light_pos;
 uniform vec3 light_color;
 uniform vec3 view_pos;
 uniform vec3 object_color;
+uniform sampler2D object_texture;
 
 void main() {
+	vec4 albedo = texture(object_texture, texcoord);
 	vec3 light_dir = normalize(-light_pos);
+	//vec3 light_dir = normalize(light_pos - frag_pos);
 
 	//ambient
 	float ambient_strength = 0.3;
@@ -30,8 +33,10 @@ void main() {
 	float spec = pow(max(dot(view_dir, reflect_dir), 0.0), 32);
 	vec3 specular = specular_strength * spec * light_color;
 
-	//result
-	vec3 result = (ambient + diffuse + specular) * object_color;
-	frag_color = vec4(result, 1.0);
+	//lighting + texture
+	vec3 lighting = (ambient + diffuse + specular);
+	vec3 result = lighting * albedo.rgb * object_color;
+	frag_color = vec4(result, albedo.a);
+	//frag_color = vec4(result, 1.0);
 	//frag_color = vec4(0.5, 0.5, 0.5, 1.0);
 }

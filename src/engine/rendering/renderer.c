@@ -4,6 +4,7 @@
 #include "engine/module/shader.h"
 #include "engine/module/mesh.h"
 #include "engine/module/texture.h"
+#include "engine/module/material.h"
 #include "engine/module/handle_util.h"
 #include "deps/glad/glad.h"
 #include "engine/platform/window.h"
@@ -45,6 +46,16 @@ static void set_draw_bound(render_system_t *rs, mesh_handle_t handle)
     u16 index = handle_get_index(handle);
     glDrawElements(GL_TRIANGLES, (int)rs->rs_mesh[index].index_count,
                    GL_UNSIGNED_INT, 0);
+}
+
+// TODO: exposed this to texture module maybe ?
+// or just exposed as render_bind_texture
+static void set_bind_texture(render_system_t *rs, texture_handle_t handle)
+{
+    u16 index = handle_get_index(handle);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, rs->rs_tex[index].id);
 }
 
 static void update_world_uniform_buffer(render_system_t *rs)
@@ -91,6 +102,8 @@ render_system_t *render_sys_init(arena_alloc_t *arena)
     rs->height = height;
 
     rs->rs_mesh = ALLOC(sizeof(render_mesh_t) * RENDER_MAX_MESH, MEM_RENDER);
+    rs->rs_tex =
+        ALLOC(sizeof(render_texture_t) * RENDER_MAX_TEXTURE, MEM_RENDER);
     rs->rs_shader =
         ALLOC(sizeof(render_shader_t) * RENDER_MAX_SHADER, MEM_RENDER);
     rs->rs_ui_mesh =
@@ -106,6 +119,7 @@ render_system_t *render_sys_init(arena_alloc_t *arena)
     }
 
     rs->curr_mat = INVALID_32;
+    rs->curr_tex = INVALID_32;
     rs->curr_mesh = INVALID_32;
 
     rs->current_fbo = 0;
@@ -134,7 +148,7 @@ render_system_t *render_sys_init(arena_alloc_t *arena)
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, rs->world_ubo);
 
     g_rs = rs;
-    LOG_TRACE("Renderer: %s", glGetString(GL_RENDERER));
+    // LOG_TRACE("Renderer: %s", glGetString(GL_RENDERER));
     LOG_INFO("Render System Init");
     return rs;
 }
@@ -151,10 +165,13 @@ void render_sys_kill(render_system_t *rs)
     glDeleteBuffers(1, &rs->rs_mesh->vbo);
     glDeleteBuffers(1, &rs->rs_mesh->ebo);
 
-    FREE(rs->rs_cmd, sizeof(render_cmd_t), MEM_RENDER);
+    FREE(rs->rs_cmd, sizeof(render_cmd_t) * RENDER_MAX_CMD, MEM_RENDER);
 
-    FREE(rs->rs_ui_mesh, sizeof(render_mesh_t), MEM_RENDER);
-    FREE(rs->rs_shader, sizeof(render_shader_t), MEM_RENDER);
+    FREE(rs->rs_ui_mesh, sizeof(render_mesh_t) * RENDER_MAX_MESH, MEM_RENDER);
+    FREE(rs->rs_shader, sizeof(render_shader_t) * RENDER_MAX_SHADER,
+         MEM_RENDER);
+    FREE(rs->rs_tex, sizeof(render_texture_t) * RENDER_MAX_TEXTURE,
+         MEM_RENDER);
     FREE(rs->rs_mesh, sizeof(render_mesh_t), MEM_RENDER);
 
     memset(rs, 0, sizeof(render_system_t));
@@ -207,11 +224,13 @@ void render_draw(render_system_t *rs, mesh_handle_t handle)
     glBindVertexArray(0);
 }
 
-void render_push(render_system_t *rs, mesh_handle_t mesh)
+void render_push(render_system_t *rs, mesh_handle_t mesh,
+                 texture_handle_t texture)
 {
     if (rs->cmd_count >= RENDER_MAX_CMD) return;
 
-    rs->rs_cmd[rs->cmd_count++] = (render_cmd_t){.mesh = mesh};
+    rs->rs_cmd[rs->cmd_count++] =
+        (render_cmd_t){.mesh = mesh, .texture = texture};
 }
 
 void render_flush(render_system_t *rs)
@@ -219,6 +238,19 @@ void render_flush(render_system_t *rs)
     for (u32 i = 0; i < rs->cmd_count; ++i)
     {
         render_cmd_t *cmd = &rs->rs_cmd[i];
+
+        if (cmd->texture != rs->curr_tex)
+        {
+            rs->curr_tex = cmd->texture;
+            printf("change texture\n");
+            set_bind_texture(rs, rs->curr_tex);
+        }
+
+        if (cmd->material != rs->curr_mat)
+        {
+            rs->curr_mat = cmd->material;
+            printf("change material\n");
+        }
 
         if (cmd->mesh != rs->curr_mesh)
         {

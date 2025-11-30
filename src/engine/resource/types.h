@@ -121,6 +121,8 @@ typedef struct {
     i32 light_color;
     i32 object_color;
     i32 view_pos;
+
+    i32 texture;
 } shader_t;
 
 typedef enum { LIGHT_DIRECTIONAL = 0, LIGHT_POINT, LIGHT_SPOT } light_type_t;

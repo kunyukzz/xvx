@@ -88,11 +88,11 @@ typedef struct {
  * @brief Render command for the render queue
  *
  * Simple command structure telling the renderer what to draw.
- * TODO: Add material handle and other properties later.
  */
 typedef struct {
     mesh_handle_t mesh;
-    // material_handle_t material;
+    material_handle_t material;
+    texture_handle_t texture; // TODO: remove this later
 } render_cmd_t;
 
 /* TODO: for monolithic buffer later

@@ -33,7 +33,9 @@ typedef struct {
 
     // TODO: temporary
     mesh_handle_t cube;
+    texture_handle_t rock;
     material_handle_t test_mat;
+
     entity_id entt_cube;
 } game_t;
 

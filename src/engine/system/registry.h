@@ -33,6 +33,8 @@ typedef struct registry_t {
     darray_t *component_mask;
     darray_t *transform;
     darray_t *model;
+    darray_t *light;
+    darray_t *material;
 
     freelist_t *fl;
 } registry_t;

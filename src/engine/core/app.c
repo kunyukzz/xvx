@@ -129,10 +129,11 @@ b8 application_run(application_t *app)
         shader_set_lightcolor(0, light_color);
         shader_set_viewpos(0, view_pos);
         shader_set_object_color(0, obj_color);
+        shader_set_sampler(0, 0);
 
         // TODO: for now, scene only doing temporary thing to collect entity
         // change this to proper scene system
-        scene_system_render(app->reg, app->rs);
+        scene_system_render(app->reg, app->rs, app->sh, app->ls);
 
         // TODO: simple rendergraph (?)
 

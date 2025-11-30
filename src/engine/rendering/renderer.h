@@ -50,6 +50,7 @@ typedef struct {
     render_shader_t *rs_shader;
 
     material_handle_t curr_mat;
+    texture_handle_t curr_tex;
     mesh_handle_t curr_mesh;
 } render_system_t;
 
@@ -112,7 +113,8 @@ void render_draw(render_system_t *rs, mesh_handle_t handle);
  * More efficient than immediate drawing for multiple objects.
  * TODO: expose this to engine level, maybe?
  */
-void render_push(render_system_t *rs, mesh_handle_t mesh);
+void render_push(render_system_t *rs, mesh_handle_t mesh,
+                 texture_handle_t texture);
 
 /**
  * @brief Execute all queued render commands
