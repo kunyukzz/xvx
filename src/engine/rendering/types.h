@@ -92,7 +92,7 @@ typedef struct {
 typedef struct {
     mesh_handle_t mesh;
     material_handle_t material;
-    texture_handle_t texture; // TODO: remove this later
+    mat4 transform;
 } render_cmd_t;
 
 /* TODO: for monolithic buffer later

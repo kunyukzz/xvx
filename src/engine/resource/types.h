@@ -82,6 +82,7 @@ typedef struct {
     texture_handle_t albedo;
     texture_handle_t normal;
 
+    // base color should use vec3
     vec4 base_color;
     f32 metallic;
     f32 roughness;

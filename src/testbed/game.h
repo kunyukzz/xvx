@@ -32,11 +32,12 @@ typedef struct {
     registry_t *reg;
 
     // TODO: temporary
-    mesh_handle_t cube;
-    texture_handle_t rock;
-    material_handle_t test_mat;
+    // mesh_handle_t cube;
+    // texture_handle_t rock;
+    // material_handle_t test_mat;
 
     entity_id entt_cube;
+    entity_id entt_floor;
 } game_t;
 
 /**

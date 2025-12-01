@@ -66,9 +66,15 @@ texture_system_t *texture_sys_init(arena_alloc_t *arena, u32 capacity)
     ts->fl = freelist_create(arena, capacity);
     if (!ts->fl) return NULL;
 
+    for (u32 i = 0; i < MAX_TEXTURE_UNIT; ++i)
+    {
+        ts->bound_textures[i] = INVALID_32;
+    }
+    ts->active_unit = 0;
+
     g_ts = ts;
     ts->default_texture = create_checker_texture();
-    // LOG_DEBUG("Created default texture: %u", ts->default_texture);
+
     LOG_INFO("Texture System Init");
     return ts;
 }
@@ -82,6 +88,12 @@ void texture_sys_kill(texture_system_t *ts)
     u64 total_size = sizeof(texture_t) * ts->capacity +
                      sizeof(u16) * ts->capacity + sizeof(b8) * ts->capacity;
     FREE(ts->textures, total_size, MEM_TEXTURE);
+
+    for (u32 i = 0; i < MAX_TEXTURE_UNIT; ++i)
+    {
+        ts->bound_textures[i] = INVALID_32;
+    }
+    ts->active_unit = 0;
 
     memset(ts, 0, sizeof(texture_system_t));
     LOG_INFO("Texture System Kill");
@@ -178,6 +190,42 @@ texture_t *texture_get(texture_handle_t handle)
     if (g_ts->gen[index] != generation) return NULL;
 
     return &g_ts->textures[index];
+}
+
+void texture_bind(texture_handle_t handle, u32 unit)
+{
+    if (!g_ts) return;
+
+    if (unit >= MAX_TEXTURE_UNIT)
+    {
+        LOG_ERROR("Texture unit %u out of bounds", unit);
+        return;
+    }
+
+    if (g_ts->bound_textures[unit] == handle) return;
+
+    texture_t *tex = texture_get(handle);
+    if (!tex)
+    {
+        tex = texture_get(g_ts->default_texture);
+        if (!tex) return;
+        handle = g_ts->default_texture;
+    }
+
+    g_ts->bound_textures[unit] = handle;
+
+    if (g_ts->active_unit != unit)
+    {
+        g_ts->active_unit = unit;
+        render_set_active_texture(unit);
+    }
+
+    render_bind_texture(handle, unit);
+}
+
+void texture_bind_active(texture_handle_t handle)
+{
+    texture_bind(handle, g_ts->active_unit);
 }
 
 texture_handle_t texture_get_default(void)

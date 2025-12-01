@@ -34,6 +34,9 @@ typedef struct {
     freelist_t *fl;
 
     shader_handle_t default_shader;
+
+    shader_handle_t bound_shader;
+    shader_t *current_shader;
 } shader_system_t;
 
 /**
@@ -117,5 +120,7 @@ void shader_set_object_color(shader_handle_t handle, vec3 v);
 void shader_set_viewpos(shader_handle_t handle, vec3 v);
 
 void shader_set_sampler(shader_handle_t handle, i32 i);
+
+void shader_reset_state(void);
 
 #endif // SHADER_H

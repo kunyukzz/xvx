@@ -14,19 +14,35 @@ game_t *game_init(void)
     game->cam = get_camera_system();
     game->reg = get_registry_system();
 
-    game->cube = mesh_create_cube(1.0, 1.0, 1.0);
-    game->rock = texture_create_from_file("textures/rocks");
+    // game->cube = mesh_create_cube(1.0, 1.0, 1.0);
+    // game->rock = texture_create_from_file("textures/rocks");
+    /*
     game->test_mat = material_create("rock", (vec4){{0.8f, 0.0f, 0.0f, 1.0f}},
-                                     game->rock, 0.0f, 0.0f);
+                                     0, 0.0f, 0.0f);
+    */
+
+    mesh_handle_t qubu = mesh_create_cube(1.0, 1.0, 1.0);
+    texture_handle_t rock = texture_create_from_file("textures/rocks");
+    material_handle_t stone_rock = material_create(
+        "test", (vec4){{0.8f, 0.0f, 0.0f, 1.0f}}, rock, 0.0f, 0.0f);
+
+    mesh_handle_t floor_handle = mesh_create_plane(2.0, 2.0, 1);
+    material_handle_t floor_mat = material_create(
+        "floor", (vec4){{1.0f, 1.0f, 1.0f, 1.0f}}, 0, 0.0, 0.0);
 
     game->entt_cube = registry_create_entity(game->reg);
+    game->entt_floor = registry_create_entity(game->reg);
 
     transform_comp_t t1 = transform_comp_default();
+    transform_comp_t t2 = transform_comp_default();
     registry_add_transform(game->reg, game->entt_cube, t1);
+    registry_add_transform(game->reg, game->entt_floor, t2);
 
-    model_comp_t model =
-        model_comp_create(game->cube, game->rock, game->test_mat);
-    registry_add_model(game->reg, game->entt_cube, model);
+    model_comp_t rock_model = model_comp_create(qubu, stone_rock);
+    registry_add_model(game->reg, game->entt_cube, rock_model);
+
+    model_comp_t floor_model = model_comp_create(floor_handle, floor_mat);
+    registry_add_model(game->reg, game->entt_floor, floor_model);
 
     LOG_INFO("Game Init");
     return game;

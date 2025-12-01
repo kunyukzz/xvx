@@ -48,32 +48,9 @@ static void set_draw_bound(render_system_t *rs, mesh_handle_t handle)
                    GL_UNSIGNED_INT, 0);
 }
 
-// TODO: exposed this to texture module maybe ?
-// or just exposed as render_bind_texture
-static void set_bind_texture(render_system_t *rs, texture_handle_t handle)
-{
-    u16 index = handle_get_index(handle);
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, rs->rs_tex[index].id);
-}
-
 static void update_world_uniform_buffer(render_system_t *rs)
 {
     glBindBuffer(GL_UNIFORM_BUFFER, rs->world_ubo);
-
-    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(mat4),
-                    rs->cam->world.proj.data);
-
-    glBufferSubData(GL_UNIFORM_BUFFER, sizeof(mat4), sizeof(mat4),
-                    rs->cam->world.view.data);
-
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
-}
-
-static void update_ui_uniform_buffer(render_system_t *rs)
-{
-    glBindBuffer(GL_UNIFORM_BUFFER, rs->ui_ubo);
 
     glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(mat4),
                     rs->cam->world.proj.data);
@@ -108,6 +85,10 @@ render_system_t *render_sys_init(arena_alloc_t *arena)
         ALLOC(sizeof(render_shader_t) * RENDER_MAX_SHADER, MEM_RENDER);
     rs->rs_cmd = ALLOC(sizeof(render_cmd_t) * RENDER_MAX_CMD, MEM_RENDER);
 
+    memset(rs->rs_mesh, 0, sizeof(render_mesh_t) * RENDER_MAX_MESH);
+    memset(rs->rs_tex, 0, sizeof(render_texture_t) * RENDER_MAX_TEXTURE);
+    memset(rs->rs_cmd, 0, sizeof(render_cmd_t) * RENDER_MAX_CMD);
+
     // glad setup
     int version_glad = gladLoadGL();
     if (version_glad == 0)
@@ -116,9 +97,10 @@ render_system_t *render_sys_init(arena_alloc_t *arena)
         return NULL;
     }
 
-    rs->curr_mat = INVALID_32;
-    rs->curr_tex = INVALID_32;
+    rs->cmd_count = 0;
     rs->curr_mesh = INVALID_32;
+    rs->curr_material = INVALID_32;
+    rs->curr_shader = INVALID_32;
 
     rs->current_fbo = 0;
     rs->clear_color = (vec4){{0.0f, 0.0f, 0.0f, 1.0f}};
@@ -144,6 +126,9 @@ render_system_t *render_sys_init(arena_alloc_t *arena)
                  GL_DYNAMIC_DRAW);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, rs->world_ubo);
+
+    glGenQueries(1, &rs->gpu_query_start);
+    glGenQueries(1, &rs->gpu_query_end);
 
     g_rs = rs;
     // LOG_TRACE("Renderer: %s", glGetString(GL_RENDERER));
@@ -194,6 +179,7 @@ void render_sys_begin(render_system_t *rs, u8 id)
         glBindFramebuffer(GL_FRAMEBUFFER, pass->fbo);
         rs->current_fbo = pass->fbo;
     }
+    // glQueryCounter(rs->gpu_query_start, GL_TIMESTAMP);
 
     glClearColor(pass->clear_color.r, pass->clear_color.g, pass->clear_color.b,
                  pass->clear_color.a);
@@ -202,10 +188,29 @@ void render_sys_begin(render_system_t *rs, u8 id)
 
 void render_sys_end(render_system_t *rs, u8 id)
 {
-    (void)rs;
     (void)id;
+    (void)rs;
+
+    /*
+    glQueryCounter(rs->gpu_query_end, GL_TIMESTAMP);
+    glFinish(); // ← FOR TESTING ONLY
+    GLuint available = 0;
+    glGetQueryObjectuiv(rs->gpu_query_end, GL_QUERY_RESULT_AVAILABLE,
+                        &available);
+
+    if (available)
+    {
+        GLuint64 start, end;
+        glGetQueryObjectui64v(rs->gpu_query_start, GL_QUERY_RESULT, &start);
+        glGetQueryObjectui64v(rs->gpu_query_end, GL_QUERY_RESULT, &end);
+
+        f64 gpu_ms = (f64)(end - start) / 1e6;
+        LOG_INFO("GPU Frame: %.3f ms", gpu_ms);
+    }
+    */
 }
 
+// direct gpu call
 void render_draw(render_system_t *rs, mesh_handle_t handle)
 {
     u16 index = handle_get_index(handle);
@@ -218,12 +223,12 @@ void render_draw(render_system_t *rs, mesh_handle_t handle)
 }
 
 void render_push(render_system_t *rs, mesh_handle_t mesh,
-                 texture_handle_t texture)
+                 material_handle_t material, mat4 transform)
 {
     if (rs->cmd_count >= RENDER_MAX_CMD) return;
 
-    rs->rs_cmd[rs->cmd_count++] =
-        (render_cmd_t){.mesh = mesh, .texture = texture};
+    rs->rs_cmd[rs->cmd_count++] = (render_cmd_t){
+        .mesh = mesh, .material = material, .transform = transform};
 }
 
 void render_flush(render_system_t *rs)
@@ -232,23 +237,17 @@ void render_flush(render_system_t *rs)
     {
         render_cmd_t *cmd = &rs->rs_cmd[i];
 
-        if (cmd->texture != rs->curr_tex)
+        if (cmd->material != rs->curr_material)
         {
-            rs->curr_tex = cmd->texture;
-            printf("change texture\n");
-            set_bind_texture(rs, rs->curr_tex);
-        }
-
-        if (cmd->material != rs->curr_mat)
-        {
-            rs->curr_mat = cmd->material;
-            printf("change material\n");
+            rs->curr_material = cmd->material;
+            // printf("change material\n");
+            material_bind(cmd->material);
         }
 
         if (cmd->mesh != rs->curr_mesh)
         {
             rs->curr_mesh = cmd->mesh;
-            printf("change mesh\n");
+            // printf("change mesh\n");
             set_bind_mesh(rs, rs->curr_mesh);
         }
 
@@ -571,4 +570,39 @@ void render_upload_texture(texture_handle_t handle, void *pixel)
     t->internal = (void *)(uintptr_t)rtex->id;
     LOG_DEBUG("Uploaded texture to GPU: %s (ID: %u, %ux%u)", t->name, rtex->id,
               t->width, t->height);
+}
+
+void render_set_active_texture(u32 unit)
+{
+    glActiveTexture(GL_TEXTURE0 + unit);
+
+    if (unit >= MAX_TEXTURE_UNIT)
+    {
+        LOG_WARN("Texture unit %u exceeds engine limit", unit);
+    }
+}
+
+void render_bind_texture(texture_handle_t handle, u32 unit)
+{
+    render_set_active_texture(unit);
+
+    // u16 index = handle_get_index(handle);
+
+    if (handle == INVALID_32)
+    {
+        glBindTexture(GL_TEXTURE_2D, 0);
+        return;
+    }
+
+    texture_t *tex = texture_get(handle);
+    if (!tex || !tex->internal)
+    {
+        LOG_WARN("Attempted to bind invalid texture handle: %u", handle);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        return;
+    }
+
+    u32 gl_id = (u32)(uintptr_t)tex->internal;
+    glBindTexture(GL_TEXTURE_2D, gl_id);
+    // glBindTexture(GL_TEXTURE_2D, g_rs->rs_tex[index].id);
 }

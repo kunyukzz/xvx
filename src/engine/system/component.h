@@ -54,8 +54,8 @@ typedef struct {
  */
 typedef struct {
     mesh_handle_t mesh;
-    texture_handle_t texture; // TODO: remove this later
     material_handle_t material;
+
 } model_comp_t;
 
 /**
@@ -64,6 +64,8 @@ typedef struct {
  *
  * Just holds handles to light resources.
  * The actual data lives elsewhere - this is just a reference.
+ *
+ * NOTE: don't know if needed this component. but who cares
  */
 typedef struct {
     light_handle_t handle;
@@ -106,10 +108,9 @@ INL transform_comp_t transform_comp_default(void)
  * Just bundles mesh and material together.
  * If either handle is invalid, it'll probably crash. Fun!
  */
-INL model_comp_t model_comp_create(mesh_handle_t mesh, texture_handle_t tex,
-                                   material_handle_t mat)
+INL model_comp_t model_comp_create(mesh_handle_t mesh, material_handle_t mat)
 {
-    return (model_comp_t){.mesh = mesh, .texture = tex, .material = mat};
+    return (model_comp_t){.mesh = mesh, .material = mat};
 }
 
 #endif // COMPONENT_H

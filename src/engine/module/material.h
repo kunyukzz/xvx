@@ -31,6 +31,10 @@ typedef struct {
     b8 *used;
 
     freelist_t *fl;
+
+    material_handle_t bound_material;
+    // shader_handle_t bound_shader;
+    texture_handle_t bound_albedo;
 } material_system_t;
 
 /**
@@ -63,6 +67,8 @@ void material_sys_kill(material_system_t *ms);
  * Creates a PBR material with the given parameters.
  * If you don't have a texture, pass an invalid handle and
  * it'll use the base color.
+ *
+ * TODO: base color should using vec3!!
  */
 material_handle_t material_create(const char *name, vec4 base_color,
                                   texture_handle_t albedo, f32 metallic,
@@ -85,5 +91,15 @@ void material_destroy(material_handle_t handle);
  * Useful for updating material properties at runtime.
  */
 material_t *material_get(material_handle_t handle);
+
+/**
+ * @brief Bind a material and all its associated resource
+ * @param handle Material to bind
+ *
+ * Efficiently binds shader, textures, and sets uniforms only when needed.
+ */
+void material_bind(material_handle_t material);
+
+void material_reset_state(void);
 
 #endif // MATERIAL_H

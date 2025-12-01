@@ -1,5 +1,7 @@
 #include "material.h"
 #include "handle_util.h"
+#include "shader.h"
+#include "texture.h"
 #include "engine/core/memory.h"
 
 #include <string.h>
@@ -32,6 +34,9 @@ material_system_t *material_sys_init(arena_alloc_t *arena, u32 capacity)
 
     mat->fl = freelist_create(arena, capacity);
     if (!mat->fl) return NULL;
+
+    mat->bound_material = INVALID_32;
+    mat->bound_albedo = INVALID_32;
 
     g_mat = mat;
     LOG_INFO("Material System Init");
@@ -98,8 +103,6 @@ material_t *material_get(material_handle_t handle)
         return NULL;
     }
 
-    if (index >= g_mat->capacity) return NULL;
-
     if (!g_mat->used[index]) return NULL;
 
     if (g_mat->gen[index] != generation) return NULL;
@@ -142,4 +145,50 @@ void material_destroy(material_handle_t handle)
     freelist_free(g_mat->fl, index);
 
     LOG_DEBUG("Destroyed material handle: %u", handle);
+}
+
+void material_bind(material_handle_t material)
+{
+    material_t *mat = material_get(material);
+    if (!mat) return;
+
+    if (g_mat->bound_albedo != mat->albedo)
+    {
+        g_mat->bound_albedo = mat->albedo;
+        texture_bind(mat->albedo, 0);
+        // shader_set_sampler(shader, 0);
+    }
+
+    /*
+    if (g_mat->bound_normal != mat->normal)
+    {
+        g_mat->bound_normal = mat->normal;
+        texture_bind(mat->normal, 1);
+        shader_set_sampler(shader, 1);
+    }
+
+    if (!vec4_equals(g_mat->bound_base_color, mat->base_color)) {
+        g_mat->bound_base_color = mat->base_color;
+        shader_set_vec4(shader, "u_base_color", mat->base_color);
+    }
+
+    if (g_mat->bound_metallic != mat->metallic) {
+        g_mat->bound_metallic = mat->metallic;
+        shader_set_float(shader, "u_metallic", mat->metallic);
+    }
+
+    if (g_mat->bound_roughness != mat->roughness) {
+        g_mat->bound_roughness = mat->roughness;
+        shader_set_float(shader, "u_roughness", mat->roughness);
+    }
+    */
+
+    g_mat->bound_material = material;
+}
+
+void material_reset_state(void)
+{
+    g_mat->bound_material = INVALID_32;
+    g_mat->bound_albedo = INVALID_32;
+    // g_mat->bound_shader = INVALID_32;
 }

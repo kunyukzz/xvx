@@ -29,6 +29,9 @@ typedef struct {
 
     i32 width, height;
 
+    u32 gpu_query_start;
+    u32 gpu_query_end;
+
     render_pass_t main_pass;
     render_pass_t debug_ui_pass;
 
@@ -48,9 +51,10 @@ typedef struct {
 
     render_shader_t *rs_shader;
 
-    material_handle_t curr_mat;
-    texture_handle_t curr_tex;
+    // HACK: this suck!!!!
     mesh_handle_t curr_mesh;
+    material_handle_t curr_material;
+    shader_handle_t curr_shader;
 } render_system_t;
 
 /**
@@ -113,7 +117,7 @@ void render_draw(render_system_t *rs, mesh_handle_t handle);
  * TODO: expose this to engine level, maybe?
  */
 void render_push(render_system_t *rs, mesh_handle_t mesh,
-                 texture_handle_t texture);
+                 material_handle_t material, mat4 transform);
 
 /**
  * @brief Execute all queued render commands
@@ -177,5 +181,9 @@ void render_upload_mesh(mesh_handle_t handle, geometry_t *geo);
  * Handles format conversion and mipmap generation.
  */
 void render_upload_texture(texture_handle_t handle, void *pixel);
+
+void render_set_active_texture(u32 unit);
+
+void render_bind_texture(texture_handle_t handle, u32 unit);
 
 #endif // RENDERER_H

@@ -123,17 +123,17 @@ b8 application_run(application_t *app)
         vec3 light_color = (vec3){{0.7f, 0.7f, 0.7f}};
 
         // bind shader
-        shader_bind(0);
-        shader_set_model(0, mat4_identity());
+        // shader_bind(0);
+        // shader_set_model(0, mat4_identity());
         shader_set_lightpos(0, light_pos);
         shader_set_lightcolor(0, light_color);
         shader_set_viewpos(0, view_pos);
         shader_set_object_color(0, obj_color);
-        shader_set_sampler(0, 0);
+        // shader_set_sampler(0, 0);
 
         // TODO: for now, scene only doing temporary thing to collect entity
         // change this to proper scene system
-        scene_system_render(app->reg, app->rs, app->sh, app->ls);
+        scene_system_render(app->reg, app->rs);
 
         // TODO: simple rendergraph (?)
 

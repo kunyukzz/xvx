@@ -14,6 +14,8 @@
 #include "engine/core/container/freelist.h"
 #include "engine/resource/types.h"
 
+#define MAX_TEXTURE_UNIT 8
+
 /**
  * @struct texture_system_t
  * @brief Internal texture system state
@@ -33,6 +35,9 @@ typedef struct {
     freelist_t *fl;
 
     texture_handle_t default_texture;
+
+    texture_handle_t bound_textures[MAX_TEXTURE_UNIT];
+    u32 active_unit;
 } texture_system_t;
 
 /**
@@ -99,5 +104,9 @@ texture_t *texture_get(texture_handle_t handle);
  * Perfect for when you don't have a real texture but want some visual flair!
  */
 texture_handle_t texture_get_default(void);
+
+void texture_bind(texture_handle_t handle, u32 unit);
+
+void texture_bind_active(texture_handle_t handle);
 
 #endif // TEXTURE_H

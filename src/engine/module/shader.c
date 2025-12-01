@@ -37,6 +37,9 @@ shader_system_t *shader_sys_init(arena_alloc_t *arena, u32 capacity)
 
     g_sh = sh;
 
+    sh->bound_shader = INVALID_32;
+    sh->current_shader = NULL;
+
     sh->default_shader = shader_create("shaders/test");
     if (sh->default_shader == 0)
     {
@@ -73,6 +76,9 @@ void shader_sys_kill(shader_system_t *sh)
     u64 total_size = sizeof(shader_t) * sh->capacity +
                      sizeof(u16) * sh->capacity + sizeof(b8) * sh->capacity;
     FREE(sh->shaders, total_size, MEM_SHADER);
+
+    g_sh->bound_shader = INVALID_32;
+    g_sh->current_shader = NULL;
 
     memset(sh, 0, sizeof(shader_system_t));
     LOG_INFO("Shader System Kill");
@@ -136,16 +142,33 @@ void shader_destroy(shader_handle_t handle)
 
 void shader_bind(shader_handle_t handle)
 {
+    if (g_sh->bound_shader == handle)
+    {
+        // LOG_DEBUG("shader_bind SKIPPED (already bound %u)", handle);
+        return;
+    }
+
     shader_t *s = shader_get(handle);
     if (!s || !s->program)
     {
         s = shader_get(g_sh->default_shader);
+        if (!s || !s->program) return;
+
+        handle = g_sh->default_shader;
     }
+    LOG_DEBUG("shader_bind CALLED (new shader %u)", handle);
 
     render_bind_shader(s ? s->program : 0);
+    g_sh->bound_shader = handle;
+    g_sh->current_shader = s;
 }
 
-void shader_unbind(void) { render_bind_shader(0); }
+void shader_unbind(void)
+{
+    g_sh->bound_shader = INVALID_32;
+    g_sh->current_shader = NULL;
+    render_bind_shader(0);
+}
 
 shader_t *shader_get(shader_handle_t handle)
 {
@@ -158,7 +181,7 @@ shader_t *shader_get(shader_handle_t handle)
 
     if (index >= g_sh->capacity)
     {
-        LOG_ERROR("Index %u out of bounds ", index);
+        LOG_ERROR("Shader index %u out of bounds ", index);
         return NULL;
     }
 
@@ -169,7 +192,7 @@ shader_t *shader_get(shader_handle_t handle)
     shader_t *shader = &g_sh->shaders[index];
     if (!shader)
     {
-        LOG_DEBUG("FUCK YOU!!");
+        LOG_DEBUG("FUCK ME!!");
     }
 
     return shader;
@@ -204,3 +227,5 @@ void shader_set_sampler(shader_handle_t handle, i32 i)
 {
     render_set_sampler(handle, i);
 }
+
+void shader_reset_state(void) { g_sh->bound_shader = INVALID_32; }

@@ -1,10 +1,15 @@
 #include "scene.h"
 #include "engine/math/maths.h"
+#include "engine/module/shader.h"
 #include "engine/rendering/renderer.h"
 
-void scene_system_render(registry_t *reg, render_system_t *rs,
-                         shader_system_t *sh, lighting_system_t *ls)
+#include <stdio.h>
+
+void scene_system_render(registry_t *reg, render_system_t *rs)
 {
+    // shader_reset_state();
+    // material_reset_state();
+
     for (u32 i = 0; i < reg->capacity; ++i)
     {
         // Just check if this slot has the required components
@@ -20,10 +25,17 @@ void scene_system_render(registry_t *reg, render_system_t *rs,
             t->dirty = false;
         }
 
+        shader_bind(0);
+        // material_bind(m->material);
+        //  printf("material_bind called\n");
+        shader_set_model(0, t->matrix);
+        //  printf("shader_set_model called\n");
+
         // NOTE: use render_draw if want direct call. (disable push & flush)
         // render_draw(rs, m->mesh);
+        // printf("render_draw called\n");
 
-        render_push(rs, m->mesh, m->texture);
+        render_push(rs, m->mesh, m->material, t->matrix);
     }
 
     render_flush(rs);
