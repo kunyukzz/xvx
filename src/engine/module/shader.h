@@ -121,6 +121,10 @@ void shader_set_viewpos(shader_handle_t handle, vec3 v);
 
 void shader_set_sampler(shader_handle_t handle, i32 i);
 
+void shader_set_ambient(shader_handle_t handle, vec3 v);
+
+void shader_set_base_color(shader_handle_t handle, vec4 v);
+
 void shader_reset_state(void);
 
 #endif // SHADER_H

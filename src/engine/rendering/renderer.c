@@ -14,7 +14,10 @@
 #define RENDER_MAX_MESH 512
 #define RENDER_MAX_TEXTURE 512
 #define RENDER_MAX_SHADER 64
-#define RENDER_MAX_CMD 512
+#define RENDER_MAX_CMD 2
+
+#define INITIAL_VBO_SIZE sizeof(vertex) * 1024
+#define INITIAL_EBO_SIZE sizeof(u32) * 1024
 
 static GLuint compile_shader(GLenum type, const char *src)
 {
@@ -33,19 +36,68 @@ static GLuint compile_shader(GLenum type, const char *src)
     return shader;
 }
 
+static void set_mono_buffer(render_system_t *rs)
+{
+    glGenVertexArrays(1, &rs->global_vao);
+    glBindVertexArray(rs->global_vao);
+
+    glGenBuffers(1, &rs->global_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, rs->global_vbo);
+    glBufferData(GL_ARRAY_BUFFER, INITIAL_VBO_SIZE, NULL, GL_DYNAMIC_DRAW);
+
+    glGenBuffers(1, &rs->global_ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rs->global_ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, INITIAL_EBO_SIZE, NULL,
+                 GL_DYNAMIC_DRAW);
+
+    // Set vertex attributes ONCE
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex),
+                          (void *)OFFSETOF(vertex, position));
+
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vertex),
+                          (void *)OFFSETOF(vertex, normal));
+
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(vertex),
+                          (void *)OFFSETOF(vertex, texcoord));
+
+    glBindVertexArray(0);
+
+    rs->vert_capacity = INITIAL_VBO_SIZE;
+    rs->index_capacity = INITIAL_EBO_SIZE;
+    rs->vert_offset = 0;
+    rs->index_offset = 0;
+
+    LOG_TRACE("Monolithic buffer created: VBO=%u bytes, EBO=%u bytes",
+              INITIAL_VBO_SIZE, INITIAL_EBO_SIZE);
+}
+
 static void set_bind_mesh(render_system_t *rs, mesh_handle_t handle)
 {
-    u16 index = handle_get_index(handle);
-    render_mesh_t *mesh = &rs->rs_mesh[index];
+    // u16 index = handle_get_index(handle);
+    // render_mesh_t *mesh = &rs->rs_mesh[index];
+    (void)handle;
 
-    glBindVertexArray(mesh->vao);
+    // printf("BIND_MESH] vao= %u\n", rs->global_vao);
+
+    glBindVertexArray(rs->global_vao);
 }
 
 static void set_draw_bound(render_system_t *rs, mesh_handle_t handle)
 {
     u16 index = handle_get_index(handle);
+    render_mesh_t *mesh = &rs->rs_mesh[index];
+
+    /*
     glDrawElements(GL_TRIANGLES, (int)rs->rs_mesh[index].index_count,
                    GL_UNSIGNED_INT, 0);
+                   */
+    glDrawElementsBaseVertex(GL_TRIANGLES, (int)mesh->index_count,
+                             GL_UNSIGNED_INT,
+                             (const void *)(uptr)mesh->index_offset,
+                             mesh->vertex_offset / sizeof(vertex));
 }
 
 static void update_world_uniform_buffer(render_system_t *rs)
@@ -111,6 +163,8 @@ render_system_t *render_sys_init(arena_alloc_t *arena)
                                     .clear_mask = GL_COLOR_BUFFER_BIT |
                                                   GL_DEPTH_BUFFER_BIT};
 
+    set_mono_buffer(rs);
+
     glViewport(0, 0, rs->width, rs->height);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
@@ -140,9 +194,9 @@ void render_sys_kill(render_system_t *rs)
 {
     if (!rs) return;
 
-    glDeleteVertexArrays(1, &rs->rs_mesh->vao);
-    glDeleteBuffers(1, &rs->rs_mesh->vbo);
-    glDeleteBuffers(1, &rs->rs_mesh->ebo);
+    glDeleteVertexArrays(1, &rs->global_vao);
+    glDeleteBuffers(1, &rs->global_vbo);
+    glDeleteBuffers(1, &rs->global_ebo);
 
     FREE(rs->rs_cmd, sizeof(render_cmd_t) * RENDER_MAX_CMD, MEM_RENDER);
 
@@ -211,6 +265,7 @@ void render_sys_end(render_system_t *rs, u8 id)
 }
 
 // direct gpu call
+/*
 void render_draw(render_system_t *rs, mesh_handle_t handle)
 {
     u16 index = handle_get_index(handle);
@@ -221,18 +276,40 @@ void render_draw(render_system_t *rs, mesh_handle_t handle)
 
     glBindVertexArray(0);
 }
+*/
+
+static int render_cmd_cmp(const void *a, const void *b)
+{
+    const render_cmd_t *A = a;
+    const render_cmd_t *B = b;
+
+    /*
+    printf("cmp: %llu vs %llu\n", (unsigned long long)A->sort_key,
+           (unsigned long long)B->sort_key);
+    */
+
+    if (A->sort_key < B->sort_key) return -1;
+    if (A->sort_key > B->sort_key) return 1;
+    return 0;
+}
 
 void render_push(render_system_t *rs, mesh_handle_t mesh,
-                 material_handle_t material, mat4 transform)
+                 material_handle_t material, mat4 transform, u64 sort)
 {
     if (rs->cmd_count >= RENDER_MAX_CMD) return;
 
-    rs->rs_cmd[rs->cmd_count++] = (render_cmd_t){
-        .mesh = mesh, .material = material, .transform = transform};
+    rs->rs_cmd[rs->cmd_count++] = (render_cmd_t){.mesh = mesh,
+                                                 .material = material,
+                                                 .transform = transform,
+                                                 .sort_key = sort};
 }
 
 void render_flush(render_system_t *rs)
 {
+    qsort(rs->rs_cmd, rs->cmd_count, sizeof(render_cmd_t), render_cmd_cmp);
+    rs->curr_mesh = INVALID_32;
+    rs->curr_material = INVALID_32;
+
     for (u32 i = 0; i < rs->cmd_count; ++i)
     {
         render_cmd_t *cmd = &rs->rs_cmd[i];
@@ -240,17 +317,18 @@ void render_flush(render_system_t *rs)
         if (cmd->material != rs->curr_material)
         {
             rs->curr_material = cmd->material;
-            // printf("change material\n");
+            // printf("change material %u \n", cmd->material);
             material_bind(cmd->material);
         }
 
         if (cmd->mesh != rs->curr_mesh)
         {
             rs->curr_mesh = cmd->mesh;
-            // printf("change mesh\n");
+            // printf("change mesh %u \n", cmd->mesh);
             set_bind_mesh(rs, rs->curr_mesh);
         }
 
+        shader_set_model(0, cmd->transform);
         set_draw_bound(rs, cmd->mesh);
     }
     rs->cmd_count = 0;
@@ -361,11 +439,13 @@ void render_cache_shader_uniform(shader_t *s)
     u32 prog = s->program;
 
     s->model = glGetUniformLocation(prog, "model");
+    s->base_color = glGetUniformLocation(prog, "base_color");
     s->light_pos = glGetUniformLocation(prog, "light_pos");
     s->view_pos = glGetUniformLocation(prog, "view_pos");
     s->light_color = glGetUniformLocation(prog, "light_color");
     s->object_color = glGetUniformLocation(prog, "object_color");
     s->texture = glGetUniformLocation(prog, "object_texture");
+    s->ambient = glGetUniformLocation(prog, "ambient");
 }
 
 void render_bind_shader(u32 program) { glUseProgram(program); }
@@ -453,6 +533,34 @@ void render_set_sampler(shader_handle_t handle, i32 id)
     glUniform1i(s->texture, id);
 }
 
+void render_set_ambient(shader_handle_t handle, vec3 v)
+{
+    shader_t *s = shader_get(handle);
+    if (!s) return;
+
+    if (s->ambient == -1)
+    {
+        LOG_DEBUG("Shader %u has no ambient uniform", handle);
+        return;
+    }
+
+    glUniform3fv(s->ambient, 1, &v.x);
+}
+
+void render_set_base_color(shader_handle_t handle, vec4 v)
+{
+    shader_t *s = shader_get(handle);
+    if (!s) return;
+
+    if (s->base_color == -1)
+    {
+        LOG_DEBUG("Shader %u has no ambient uniform", handle);
+        return;
+    }
+
+    glUniform4fv(s->base_color, 1, &v.x);
+}
+
 void render_upload_mesh(mesh_handle_t handle, geometry_t *geo)
 {
     mesh_t *mesh = mesh_get(handle);
@@ -472,31 +580,43 @@ void render_upload_mesh(mesh_handle_t handle, geometry_t *geo)
 
     render_mesh_t *rmesh = &g_rs->rs_mesh[index];
 
-    // Clean up existing GPU data if any
+    /*
     if (rmesh->vao != 0)
     {
         glDeleteVertexArrays(1, &rmesh->vao);
         glDeleteBuffers(1, &rmesh->vbo);
         glDeleteBuffers(1, &rmesh->ebo);
     }
+    */
 
+    rmesh->vertex_offset = g_rs->vert_offset;
+    rmesh->index_offset = g_rs->index_offset;
     rmesh->index_count = geo->indices_count;
 
     // TODO: change this to use monolithic buffer
-    glGenVertexArrays(1, &rmesh->vao);
-    glBindVertexArray(rmesh->vao);
+    // glGenVertexArrays(1, &rmesh->vao);
+    // glBindVertexArray(rmesh->vao);
 
-    glGenBuffers(1, &rmesh->vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, rmesh->vbo);
+    // glGenBuffers(1, &rmesh->vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, g_rs->global_vbo);
+    glBufferSubData(GL_ARRAY_BUFFER, rmesh->vertex_offset,
+                    geo->vert_size * geo->vert_count, geo->vertices);
+    /*
     glBufferData(GL_ARRAY_BUFFER, geo->vert_size * geo->vert_count,
                  geo->vertices, GL_STATIC_DRAW);
+    */
 
-    glGenBuffers(1, &rmesh->ebo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rmesh->ebo);
+    // glGenBuffers(1, &rmesh->ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_rs->global_ebo);
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, rmesh->index_offset,
+                    geo->indices_size * geo->indices_count, geo->indices);
+    /*
     glBufferData(GL_ELEMENT_ARRAY_BUFFER,
                  geo->indices_size * geo->indices_count, geo->indices,
                  GL_STATIC_DRAW);
+    */
 
+    /*
     // position attribute
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, (int)geo->vert_size,
@@ -513,9 +633,22 @@ void render_upload_mesh(mesh_handle_t handle, geometry_t *geo)
                           (void *)OFFSETOF(vertex, texcoord));
 
     glBindVertexArray(0);
-
     LOG_DEBUG("Uploaded mesh to GPU: handle=%u, index=%u, indices=%u", handle,
               index, geo->indices_count);
+    */
+
+    g_rs->vert_offset += geo->vert_size * geo->vert_count;
+    g_rs->index_offset += geo->indices_size * geo->indices_count;
+
+    /*
+    LOG_DEBUG("Uploaded mesh to monolithic buffer: handle %u, index: %u, "
+              "indices: %u",
+              handle, index, geo->indices_count);
+    */
+
+    LOG_DEBUG("Uploading mesh %u: vertex_offset=%u / %u, index_offset=%u / %u",
+              handle, rmesh->vertex_offset, g_rs->vert_capacity,
+              rmesh->index_offset, g_rs->index_capacity);
 }
 
 void render_upload_texture(texture_handle_t handle, void *pixel)

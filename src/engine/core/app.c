@@ -30,18 +30,18 @@ b8 application_init(application_t *app)
     app->game = game_init();
 
 #if DEBUG
-    LOG_DEBUG("--- Memory Addresses ---");
-    LOG_DEBUG("Filesystem: %p", app->fs);
-    LOG_DEBUG("Window:     %p", app->ws);
-    LOG_DEBUG("Input:      %p", app->ip);
-    LOG_DEBUG("Camera:     %p", app->cs);
-    LOG_DEBUG("Render:     %p", app->rs);
-    LOG_DEBUG("Shader:     %p", app->sh);
-    LOG_DEBUG("Light:      %p", app->ls);
-    LOG_DEBUG("Mesh:       %p", app->ms);
-    LOG_DEBUG("Texture:    %p", app->ts);
-    LOG_DEBUG("Material:   %p", app->mts);
-    LOG_DEBUG("Registry:   %p", app->reg);
+    // LOG_DEBUG("--- Memory Addresses ---");
+    // LOG_DEBUG("Filesystem: %p", app->fs);
+    // LOG_DEBUG("Window:     %p", app->ws);
+    // LOG_DEBUG("Input:      %p", app->ip);
+    // LOG_DEBUG("Camera:     %p", app->cs);
+    // LOG_DEBUG("Render:     %p", app->rs);
+    // LOG_DEBUG("Shader:     %p", app->sh);
+    // LOG_DEBUG("Light:      %p", app->ls);
+    // LOG_DEBUG("Mesh:       %p", app->ms);
+    // LOG_DEBUG("Texture:    %p", app->ts);
+    // LOG_DEBUG("Material:   %p", app->mts);
+    // LOG_DEBUG("Registry:   %p", app->reg);
 
     u64 used = arena_used(&app->arena);
     u64 total = app->arena.total_size;
@@ -117,23 +117,26 @@ b8 application_run(application_t *app)
             def->position.z = m_cos(orbit) * radius;
         }
 
-        vec3 light_pos = def->position;
+        // vec3 light_pos = def->position;
         vec3 view_pos = app->cs->world.position;
-        vec3 obj_color = (vec3){{0.0f, 1.0f, 0.0f}};
-        vec3 light_color = (vec3){{0.7f, 0.7f, 0.7f}};
+        vec4 obj_color = (vec4){{1.0f, 1.0f, 1.0f, 1.0f}};
+        vec3 light_color = (vec3){{1.0f, 1.0f, 1.0f}};
+        vec3 ambient = (vec3){{0.5, 0.5, 0.5}};
 
         // bind shader
-        // shader_bind(0);
+        shader_bind(0);
         // shader_set_model(0, mat4_identity());
-        shader_set_lightpos(0, light_pos);
+        shader_set_base_color(0, obj_color);
+        shader_set_lightpos(0, def->position);
         shader_set_lightcolor(0, light_color);
-        shader_set_viewpos(0, view_pos);
-        shader_set_object_color(0, obj_color);
-        // shader_set_sampler(0, 0);
+        // shader_set_viewpos(0, view_pos);
+        shader_set_ambient(0, ambient);
+        // shader_set_object_color(0, obj_color);
+        shader_set_sampler(0, 0);
 
         // TODO: for now, scene only doing temporary thing to collect entity
         // change this to proper scene system
-        scene_system_render(app->reg, app->rs);
+        scene_system_render(app->reg, app->rs, app->ms, app->mts);
 
         // TODO: simple rendergraph (?)
 

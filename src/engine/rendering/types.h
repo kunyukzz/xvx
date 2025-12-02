@@ -55,9 +55,11 @@ typedef struct {
  * This is what gets created from our abstract mesh_t.
  */
 typedef struct {
-    u32 vao;
-    u32 vbo;
-    u32 ebo;
+    // u32 vao;
+    // u32 vbo;
+    // u32 ebo;
+    u32 vertex_offset;
+    u32 index_offset;
     u32 index_count;
 } render_mesh_t;
 
@@ -90,6 +92,8 @@ typedef struct {
  * Simple command structure telling the renderer what to draw.
  */
 typedef struct {
+    u64 sort_key;
+
     mesh_handle_t mesh;
     material_handle_t material;
     mat4 transform;

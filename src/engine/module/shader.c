@@ -40,7 +40,7 @@ shader_system_t *shader_sys_init(arena_alloc_t *arena, u32 capacity)
     sh->bound_shader = INVALID_32;
     sh->current_shader = NULL;
 
-    sh->default_shader = shader_create("shaders/test");
+    sh->default_shader = shader_create("shaders/default");
     if (sh->default_shader == 0)
     {
         LOG_ERROR("FAILED TO CREATE DEFAULT SHADER!");
@@ -226,6 +226,16 @@ void shader_set_viewpos(shader_handle_t handle, vec3 v)
 void shader_set_sampler(shader_handle_t handle, i32 i)
 {
     render_set_sampler(handle, i);
+}
+
+void shader_set_ambient(shader_handle_t handle, vec3 v)
+{
+    render_set_ambient(handle, v);
+}
+
+void shader_set_base_color(shader_handle_t handle, vec4 v)
+{
+    render_set_base_color(handle, v);
 }
 
 void shader_reset_state(void) { g_sh->bound_shader = INVALID_32; }

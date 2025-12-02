@@ -17,6 +17,7 @@ material_system_t *material_sys_init(arena_alloc_t *arena, u32 capacity)
     mat->arena = arena;
     mat->capacity = capacity;
     mat->count = 0;
+    mat->internal_id = 1;
 
     u64 total_size = sizeof(material_t) * capacity + sizeof(u16) * capacity +
                      sizeof(b8) * capacity;
@@ -78,6 +79,7 @@ material_handle_t material_create(const char *name, vec4 base_color,
     mat->albedo = albedo;
     mat->metallic = metallic;
     mat->roughness = roughness;
+    mat->id = g_mat->internal_id++;
 
     g_mat->used[index] = true;
     g_mat->count++;
@@ -85,7 +87,8 @@ material_handle_t material_create(const char *name, vec4 base_color,
     u16 gen = g_mat->gen[index];
     material_handle_t handle = handle_create((u16)index, gen);
 
-    LOG_DEBUG("created material: %s (handle: %u)", name, handle);
+    LOG_DEBUG("created material: %s (handle: %u - sort id: %u)", name, handle,
+              g_mat->internal_id);
 
     return handle;
 }

@@ -27,6 +27,15 @@ typedef struct {
     arena_alloc_t *arena;
     camera_system_t *cam;
 
+    // monolithic buffer
+    u32 global_vao;
+    u32 global_vbo;
+    u32 global_ebo;
+    u32 vert_capacity;
+    u32 index_capacity;
+    u32 vert_offset;
+    u32 index_offset;
+
     i32 width, height;
 
     u32 gpu_query_start;
@@ -117,7 +126,7 @@ void render_draw(render_system_t *rs, mesh_handle_t handle);
  * TODO: expose this to engine level, maybe?
  */
 void render_push(render_system_t *rs, mesh_handle_t mesh,
-                 material_handle_t material, mat4 transform);
+                 material_handle_t material, mat4 transform, u64 sort);
 
 /**
  * @brief Execute all queued render commands
@@ -161,6 +170,10 @@ void render_set_object_color(shader_handle_t handle, vec3 v);
 void render_set_view_pos(shader_handle_t handle, vec3 v);
 
 void render_set_sampler(shader_handle_t handle, i32 id);
+
+void render_set_ambient(shader_handle_t handle, vec3 v);
+
+void render_set_base_color(shader_handle_t handle, vec4 v);
 
 /**
  * @brief Upload mesh geometry to GPU buffers

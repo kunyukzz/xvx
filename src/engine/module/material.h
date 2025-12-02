@@ -32,6 +32,8 @@ typedef struct {
 
     freelist_t *fl;
 
+    u32 internal_id;
+
     material_handle_t bound_material;
     // shader_handle_t bound_shader;
     texture_handle_t bound_albedo;

@@ -19,6 +19,7 @@ mesh_system_t *mesh_sys_init(arena_alloc_t *arena, u32 capacity)
     mesh->arena = arena;
     mesh->capacity = capacity;
     mesh->count = 0;
+    mesh->internal_id = 1;
 
     u64 total_size = sizeof(mesh_t) * capacity + sizeof(u16) * capacity +
                      sizeof(b8) * capacity;
@@ -75,17 +76,19 @@ mesh_handle_t mesh_create_plane(float width, float height, u32 segments)
 
     geometry_t geo = geometry_gen_plane(width, height, segments);
     m->geometry = geo;
+    m->uploaded = true;
+    m->id = g_mesh->internal_id++;
 
     g_mesh->used[index] = true;
     g_mesh->count++;
 
     u16 gen = g_mesh->gen[index];
     mesh_handle_t handle = handle_create((u16)index, gen);
-    LOG_DEBUG("Handle creation - index: %u, generation: %u, handle: %u", index,
-              gen, handle);
 
     render_upload_mesh(handle, &geo);
     geometry_destroy(&geo);
+    LOG_DEBUG("created mesh: %u (handle: %u - sort id: %u)", index, handle,
+              g_mesh->internal_id);
 
     return handle;
 }
@@ -99,8 +102,10 @@ mesh_handle_t mesh_create_cube(f32 width, f32 height, f32 depth)
         LOG_ERROR("No free mesh slot available");
         return 0;
     }
+    /*
     LOG_DEBUG("Allocated mesh at index %u (free: %u)", index,
               freelist_available_count(g_mesh->fl));
+              */
 
     mesh_t *m = &g_mesh->meshes[index];
     m->uploaded = false;
@@ -108,17 +113,20 @@ mesh_handle_t mesh_create_cube(f32 width, f32 height, f32 depth)
 
     geometry_t geo = geometry_gen_cube(width, height, depth);
     m->geometry = geo;
+    m->uploaded = true;
+    m->id = g_mesh->internal_id++;
 
     g_mesh->used[index] = true;
     g_mesh->count++;
 
     u16 gen = g_mesh->gen[index];
     mesh_handle_t handle = handle_create((u16)index, gen);
-    LOG_DEBUG("Handle creation - index: %u, generation: %u, handle: %u", index,
-              gen, handle);
 
     render_upload_mesh(handle, &geo);
     geometry_destroy(&geo);
+
+    LOG_DEBUG("created mesh: %u (handle: %u - sort id: %u)", index, handle,
+              g_mesh->internal_id);
 
     return handle;
 }

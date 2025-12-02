@@ -14,8 +14,8 @@ uniform sampler2D object_texture;
 
 void main() {
 	vec4 albedo = texture(object_texture, texcoord);
-	vec3 light_dir = normalize(-light_pos);
-	//vec3 light_dir = normalize(light_pos - frag_pos);
+	//vec3 light_dir = normalize(-light_pos);
+	vec3 light_dir = normalize(light_pos - frag_pos);
 
 	//ambient
 	float ambient_strength = 0.3;

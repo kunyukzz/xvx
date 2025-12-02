@@ -33,6 +33,8 @@ typedef struct mesh_system_t {
     freelist_t *fl;
     u32 capacity;
     u32 count;
+
+    u32 internal_id;
 } mesh_system_t;
 
 /**

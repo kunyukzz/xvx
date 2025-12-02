@@ -47,6 +47,7 @@ typedef struct {
 typedef struct {
     geometry_t geometry;
     b8 uploaded;
+    u32 id;
 
     // pointing to internal renderer
     void *internal;
@@ -78,6 +79,7 @@ typedef struct {
  */
 typedef struct {
     char name[64];
+    u32 id;
 
     texture_handle_t albedo;
     texture_handle_t normal;
@@ -118,10 +120,12 @@ typedef struct {
     u32 program;
     i32 model;
 
+    i32 base_color;
     i32 light_pos;
     i32 light_color;
     i32 object_color;
     i32 view_pos;
+    i32 ambient;
 
     i32 texture;
 } shader_t;
